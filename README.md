@@ -98,11 +98,19 @@ Strong success criteria let the LLM loop independently. Weak criteria ("make it 
 
 ## Install
 
-**Option A: Claude Code Plugin (recommended)**
+**One-command install (all tools globally):**
+```bash
+npx github:xiaodizi/andrej-karpathy-skills
+```
+This installs the guidelines to **Claude Code**, **Cursor**, **OpenCode**, and **Codex** global configuration in one shot. It never overwrites your existing settings — it only appends with safe markers. Run it again any time to update.
+
+---
+
+**Option A: Claude Code Plugin (recommended for Claude Code)**
 
 From within Claude Code, first add the marketplace:
 ```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
+/plugin marketplace add xiaodizi/andrej-karpathy-skills
 ```
 
 Then install the plugin:
@@ -110,24 +118,38 @@ Then install the plugin:
 /plugin install andrej-karpathy-skills@karpathy-skills
 ```
 
-This installs the guidelines as a Claude Code plugin, making the skill available across all your projects.
+This installs the guidelines as a Claude Code plugin, making them available across all your projects.
 
 **Option B: CLAUDE.md (per-project)**
 
 New project:
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/xiaodizi/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 Existing project (append):
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/xiaodizi/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
+
+**Option C: Cursor (global rule)**
+
+Copy [`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc) to `~/.cursor/rules/`, or just run the one-command install above.
+
+The rule commits with `alwaysApply: true`, so it takes effect in every Cursor project automatically.
+
+**Option D: OpenCode (global)**
+
+The one-command install adds `instructions: ["AGENTS.md"]` to `~/.config/opencode/opencode.json` and writes the guidelines to `~/.config/opencode/AGENTS.md`. Restart opencode to load the new config.
+
+**Option E: Codex (global)**
+
+Codex auto-discovers `~/.codex/AGENTS.md`. The one-command install creates (or appends to) this file.
 
 ## Using with Cursor
 
-This repository includes a committed Cursor project rule ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc)) so the same guidelines apply when you open the project in Cursor. See **[CURSOR.md](CURSOR.md)** for setup, using the rule in other projects, and how this relates to Claude Code.
+This repository includes a committed Cursor project rule ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc)) so the same guidelines apply when you open the project in Cursor. See **[CURSOR.md](CURSOR.md)** for setup, using the rule in other projects, and how this relates to Claude Code. For global install, run the one-command install above.
 
 ## Key Insight
 

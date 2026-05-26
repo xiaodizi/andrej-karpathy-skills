@@ -1,0 +1,18 @@
+{
+  "name": "karpathy-guidelines",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Karpathy-inspired behavioral guidelines for AI coding tools (Claude Code, Cursor, OpenCode, Codex)",
+  "type": "module",
+  "bin": {
+    "install-karpathy": "./install-karpathy.mjs"
+  },
+  "files": [
+    "install-karpathy.mjs",
+    "CLAUDE.md"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -98,11 +98,19 @@ LLM 经常默默选择一种解释然后执行。这个原则强制明确推理�
 
 ## 安装
 
+**一键安装（所有工具全局生效）：**
+```bash
+npx github:xiaodizi/andrej-karpathy-skills
+```
+一行命令将四项原则安装到 **Claude Code**、**Cursor**、**OpenCode**、**Codex** 的全局配置中。不会覆盖你现有的设置——只通过标记安全追加。随时可重复运行更新。
+
+---
+
 **选项 A：Claude Code 插件（推荐）**
 
 在 Claude Code 中，首先添加插件市场：
 ```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
+/plugin marketplace add xiaodizi/andrej-karpathy-skills
 ```
 
 然后安装插件：
@@ -116,18 +124,30 @@ LLM 经常默默选择一种解释然后执行。这个原则强制明确推理�
 
 新项目：
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/xiaodizi/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 已有项目（追加）：
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/xiaodizi/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
+
+**选项 C：Cursor（全局规则）**
+
+将 [`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc) 复制到 `~/.cursor/rules/`，或者直接运行一键安装命令。该规则自带 `alwaysApply: true`，会自动在所有 Cursor 项目中生效。
+
+**选项 D：OpenCode（全局）**
+
+一键安装命令会自动在 `~/.config/opencode/opencode.json` 中添加 `instructions: ["AGENTS.md"]`，并把指南写入 `~/.config/opencode/AGENTS.md`。重启 opencode 后生效。
+
+**选项 E：Codex（全局）**
+
+Codex 会自动发现 `~/.codex/AGENTS.md`。一键安装命令会创建（或追加）该文件。
 
 ## 在 Cursor 中使用
 
-本仓库包含一个已提交的 Cursor 项目规则 ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc))，因此在 Cursor 中打开项目时同样适用这些指南。详情请参见 **[CURSOR.md](CURSOR.md)**，包括如何在其他项目中使用该规则，以及它与 Claude Code 的关系。
+本仓库包含一个已提交的 Cursor 项目规则 ([`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc))，因此在 Cursor 中打开项目时同样适用这些指南。详情请参见 **[CURSOR.md](CURSOR.md)**，包括如何在其他项目中使用该规则，以及它与 Claude Code 的关系。如需全局安装，请运行一键安装命令。
 
 ## 核心洞察
 
