@@ -54,6 +54,25 @@ description: Behavioral guidelines to reduce common LLM coding mistakes. Use whe
 alwaysApply: true
 ---`;
 
+// ---- content detection ----
+
+/** Key phrases that indicate the principles are already present in a file. */
+const PRINCIPLES_SIGNALS = [
+  'Think Before Coding',
+  'Simplicity First',
+  'Surgical Changes',
+  'Goal-Driven Execution',
+  "Don't assume. Don't hide confusion",
+  'Minimum code that solves the problem',
+  'Touch only what you must',
+  'Define success criteria. Loop until verified',
+];
+
+function principlesExist(text) {
+  const hits = PRINCIPLES_SIGNALS.filter(s => text.includes(s)).length;
+  return hits >= 2;  // 2+ matches → likely already there
+}
+
 // ---- helpers ----
 
 /**
@@ -86,10 +105,13 @@ function upsertContent(filePath, bodyContent, prependHeader = '') {
     const before = existing.split(MARKER_START)[0];
     const after  = existing.includes(MARKER_END) ? existing.split(MARKER_END).slice(1).join(MARKER_END) : '';
     result = `${before}${wrapped}${after}`;
-    // Preserve prependHeader only if the file already has it
     action = 'updated';
+  } else if (principlesExist(existing)) {
+    // Content already present without markers – skip to avoid duplication
+    action = 'exists';
+    return action; // early return – don't touch the file
   } else {
-    // Append – preserve header from prependHeader if the file doesn't have it
+    // Append
     const sep = existing.endsWith('\n') ? '' : '\n';
     result = `${existing}${sep}\n${wrapped}\n`;
     action = 'appended';
@@ -216,7 +238,7 @@ for (const t of targets) {
   }
   try {
     const verb = t.install();
-    const icon = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : '✓';
+    const icon = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : verb === 'exists' ? '✓' : '✓';
     console.log(`  ${icon} ${t.name}: ${t.file.replace(HOME, '~')}  (${verb})`);
     ok++;
   } catch (err) {
