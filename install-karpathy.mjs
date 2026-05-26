@@ -56,30 +56,43 @@ alwaysApply: true
 
 // ---- content detection ----
 
-/** Key phrases that indicate the principles are already present in a file. */
-const PRINCIPLES_SIGNALS = [
-  'Think Before Coding',
-  'Simplicity First',
-  'Surgical Changes',
-  'Goal-Driven Execution',
-  "Don't assume. Don't hide confusion",
-  'Minimum code that solves the problem',
-  'Touch only what you must',
-  'Define success criteria. Loop until verified',
-];
+/**
+ * Classify how the principles appear in an existing file.
+ *
+ *   marker    → markers are present (managed by this script)
+ *   complete  → all 4 principles found without markers
+ *   partial   → some (1-3) of the 4 principles found
+ *   absent    → none detected
+ */
+function getPrinciplesState(text) {
+  if (!text) return 'absent';
+  if (text.includes(MARKER_START)) return 'marker';
 
-function principlesExist(text) {
-  const hits = PRINCIPLES_SIGNALS.filter(s => text.includes(s)).length;
-  return hits >= 2;  // 2+ matches → likely already there
+  const sections = [
+    { heading: 'Think Before Coding', statement: "Don't assume. Don't hide confusion" },
+    { heading: 'Simplicity First',    statement: 'Minimum code that solves the problem' },
+    { heading: 'Surgical Changes',    statement: 'Touch only what you must' },
+    { heading: 'Goal-Driven Execution', statement: 'Define success criteria. Loop until verified' },
+  ];
+
+  const presentCount = sections.filter(
+    s => text.includes(s.heading) || text.includes(s.statement),
+  ).length;
+
+  if (presentCount === 0)                return 'absent';
+  if (presentCount < sections.length)    return 'partial';
+  return 'complete';
 }
 
 // ---- helpers ----
 
 /**
  * Write (or update) a file with marker-delimited content.
- *   - If file is absent → create with markers.
- *   - If markers exist  → replace content between them (update).
- *   - If file exists but no markers → append.
+ *
+ *   absent    → create / append with markers
+ *   marker    → replace content between markers (always up-to-date)
+ *   complete  → skip – already present
+ *   partial   → skip – present but incomplete; adding more risks duplication
  */
 function upsertContent(filePath, bodyContent, prependHeader = '') {
   const dir = dirname(filePath);
@@ -90,31 +103,36 @@ function upsertContent(filePath, bodyContent, prependHeader = '') {
     existing = readFileSync(filePath, 'utf-8');
   }
 
-  const wrapped = `${MARKER_START}\n${bodyContent}\n${MARKER_END}`;
+  const state = getPrinciplesState(existing);
   let result;
   let action;
 
-  if (!existing) {
-    // Brand new file
-    result = prependHeader
-      ? `${prependHeader}\n\n${wrapped}\n`
-      : `${wrapped}\n`;
-    action = 'created';
-  } else if (existing.includes(MARKER_START)) {
-    // Replace content between markers
+  if (state === 'marker') {
+    // Replace content between existing markers (always clean update)
     const before = existing.split(MARKER_START)[0];
     const after  = existing.includes(MARKER_END) ? existing.split(MARKER_END).slice(1).join(MARKER_END) : '';
+    const wrapped = `${MARKER_START}\n${bodyContent}\n${MARKER_END}`;
     result = `${before}${wrapped}${after}`;
     action = 'updated';
-  } else if (principlesExist(existing)) {
-    // Content already present without markers – skip to avoid duplication
-    action = 'exists';
-    return action; // early return – don't touch the file
+  } else if (state === 'complete') {
+    // Already fully present – skip
+    return 'exists';
+  } else if (state === 'partial') {
+    // Partially present – skip to avoid any risk of duplication
+    return 'partial';
   } else {
-    // Append
-    const sep = existing.endsWith('\n') ? '' : '\n';
-    result = `${existing}${sep}\n${wrapped}\n`;
-    action = 'appended';
+    // absent – fresh install (new file or no trace of the content)
+    const wrapped = `${MARKER_START}\n${bodyContent}\n${MARKER_END}`;
+    if (!existing) {
+      result = prependHeader
+        ? `${prependHeader}\n\n${wrapped}\n`
+        : `${wrapped}\n`;
+      action = 'created';
+    } else {
+      const sep = existing.endsWith('\n') ? '' : '\n';
+      result = `${existing}${sep}\n${wrapped}\n`;
+      action = 'appended';
+    }
   }
 
   writeFileSync(filePath, result, 'utf-8');
@@ -238,8 +256,11 @@ for (const t of targets) {
   }
   try {
     const verb = t.install();
-    const icon = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : verb === 'exists' ? '✓' : '✓';
-    console.log(`  ${icon} ${t.name}: ${t.file.replace(HOME, '~')}  (${verb})`);
+    const label = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : verb === 'exists' ? '✓' : verb === 'partial' ? '⚠️' : '✓';
+    const msg = verb === 'partial'
+      ? `${label} ${t.name}: ${t.file.replace(HOME, '~')}  (partial content exists – skipped to avoid duplication)`
+      : `${label} ${t.name}: ${t.file.replace(HOME, '~')}  (${verb})`;
+    console.log(`  ${msg}`);
     ok++;
   } catch (err) {
     console.error(`  ❌ ${t.name}: ${err.message}`);
