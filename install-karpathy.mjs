@@ -17,6 +17,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { execSync } from 'child_process';
 import { dirname, resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
@@ -131,6 +132,27 @@ function ensureOpencodeInstructions(configDir, agentsFilename) {
   return 'unchanged';
 }
 
+// ---- detection ----
+
+/**
+ * Check whether a tool appears to be installed on this machine.
+ * Looks for the presence of its config directory AND its CLI command.
+ */
+function isDetected(name, configDirPaths, cliCommands) {
+  // Config directory check
+  for (const p of configDirPaths) {
+    if (existsSync(p)) return true;
+  }
+  // CLI check
+  for (const cmd of cliCommands) {
+    try {
+      execSync(`which ${cmd}`, { stdio: 'ignore' });
+      return true;
+    } catch { /* not found */ }
+  }
+  return false;
+}
+
 // ---- targets ----
 
 const targets = [];
@@ -138,6 +160,7 @@ const targets = [];
 // 1. Codex (~/.codex/AGENTS.md)
 targets.push({
   name: 'Codex',
+  detect: () => isDetected('Codex', [join(HOME, '.codex')], ['codex']),
   file: join(HOME, '.codex', 'AGENTS.md'),
   install: () => upsertContent(join(HOME, '.codex', 'AGENTS.md'), principlesSource),
 });
@@ -145,11 +168,13 @@ targets.push({
 // 2. OpenCode (~/.config/opencode/AGENTS.md + opencode.json)
 targets.push({
   name: 'OpenCode (AGENTS.md)',
+  detect: () => isDetected('OpenCode', [join(HOME, '.config', 'opencode')], ['opencode']),
   file: join(HOME, '.config', 'opencode', 'AGENTS.md'),
   install: () => upsertContent(join(HOME, '.config', 'opencode', 'AGENTS.md'), principlesSource),
 });
 targets.push({
   name: 'OpenCode (opencode.json)',
+  detect: () => isDetected('OpenCode', [join(HOME, '.config', 'opencode')], ['opencode']),
   file: join(HOME, '.config', 'opencode', 'opencode.json'),
   install: () => ensureOpencodeInstructions(join(HOME, '.config', 'opencode'), 'AGENTS.md'),
 });
@@ -157,6 +182,7 @@ targets.push({
 // 3. Cursor (~/.cursor/rules/karpathy-guidelines.mdc)
 targets.push({
   name: 'Cursor',
+  detect: () => isDetected('Cursor', [join(HOME, '.cursor'), '/Applications/Cursor.app'], ['cursor']),
   file: join(HOME, '.cursor', 'rules', 'karpathy-guidelines.mdc'),
   install: () => upsertContent(
     join(HOME, '.cursor', 'rules', 'karpathy-guidelines.mdc'),
@@ -168,6 +194,7 @@ targets.push({
 // 4. Claude Code (~/.claude/CLAUDE.md)
 targets.push({
   name: 'Claude Code',
+  detect: () => isDetected('Claude Code', [join(HOME, '.claude')], ['claude', 'claude-code']),
   file: join(HOME, '.claude', 'CLAUDE.md'),
   install: () => upsertContent(join(HOME, '.claude', 'CLAUDE.md'), principlesSource),
 });
@@ -178,12 +205,18 @@ console.log('');
 console.log('  Installing Karpathy Behavioral Guidelines globally…\n');
 
 let ok = 0;
+let skip = 0;
 let fail = 0;
 
 for (const t of targets) {
+  if (!t.detect()) {
+    console.log(`  ⏭️  ${t.name}: not detected, skipped`);
+    skip++;
+    continue;
+  }
   try {
     const verb = t.install();
-    const icon = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : '⏭️';
+    const icon = verb === 'created' ? '✅' : verb === 'updated' ? '🔄' : verb === 'appended' ? '➕' : '✓';
     console.log(`  ${icon} ${t.name}: ${t.file.replace(HOME, '~')}  (${verb})`);
     ok++;
   } catch (err) {
@@ -194,7 +227,7 @@ for (const t of targets) {
 
 console.log('');
 if (fail === 0) {
-  console.log('  ✅ Done! Restart each tool for changes to take effect.\n');
+  console.log(`  ✅ Done! (${ok} installed, ${skip} skipped) Restart each tool for changes to take effect.\n`);
 } else {
-  console.log(`  ⚠️  Done with ${fail} error(s).\n`);
+  console.log(`  ⚠️  Done with ${fail} error(s). (${ok} installed, ${skip} skipped)\n`);
 }
